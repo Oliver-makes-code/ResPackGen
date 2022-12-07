@@ -1,6 +1,6 @@
 import * as common from "./common.ts"
 import * as fs from "https://deno.land/std@0.167.0/fs/mod.ts";
-import { JSZip } from "https://deno.land/x/jszip/mod.ts";
+import { JSZip } from "https://deno.land/x/jszip@0.11.0/mod.ts";
 
 export default async function build() {
 
