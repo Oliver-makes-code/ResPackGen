@@ -20,6 +20,8 @@ export interface PackGenMeta {
     repo?: string
 }
 
+export type OrArray<T> = T | T[]
+
 // TODO: parse /license(.(txt|md))?/ to get license type
 export function getLicense(): string {
     return "ARR"
@@ -89,32 +91,15 @@ export function Ok<T>(value: T): Ok<T> {
 }
 export type Result<T, E> = Ok<T>|Err<E>
 
-export interface Identifier {
-    namesapce: string,
-    path: string
-}
-
 export const FailReason = {
     NO_META: "NO_META",
-    INVALID_NAMESPACE: "INVALID_NAMESPACE",
     INVALID_PATH: "INVALID_PATH"
 } as const
 
 export type FailReason = typeof FailReason[keyof typeof FailReason]
 
-export async function identifier(namesapce: string, path?: string): Promise<Result<Identifier, FailReason>> {
-    if (!path) {
-        const match = namesapce.match(IDENTIFIER)
-        if (match)
-            return await identifier(match[1], match[2])
-        const meta = await getMeta()
-        if (!meta) return Err(FailReason.NO_META)
-        return await identifier(meta.namespace, namesapce)
-    }
-    if (!namesapce.match(LEGAL_NAMESPACE)) return Err(FailReason.INVALID_NAMESPACE)
-    if (!path.match(LEGAL_PATH)) return Err(FailReason.INVALID_PATH)
-    return Ok({
-        namesapce: namesapce,
-        path: path
-    })
+type Identifier = string
+
+export function validateIdentifier(identifier: Identifier): boolean {
+    return !!identifier.match(/([a-z\.\-_]+:)?[a-z\.\-_/]+/)
 }

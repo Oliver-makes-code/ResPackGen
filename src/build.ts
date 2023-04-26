@@ -1,6 +1,7 @@
 import * as common from "./common.ts"
 import * as fs from "https://deno.land/std@0.167.0/fs/mod.ts";
 import { JSZip } from "https://deno.land/x/jszip@0.11.0/mod.ts";
+import { transformBlockState } from "./blockstate.ts";
 
 export default async function build() {
 
@@ -27,6 +28,8 @@ export default async function build() {
     console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"\nExported "+common.ColorCodes.RESET+common.ColorCodes.BLUE+zipname)
 }
 const FENNEC_FILE = /\.fennec$/i
+const MCMETA_FILE = /\.mcmeta\.fennec$/i
+const BLOCKSTATE_FILE = /\.blockstate\.fennec$/i
 const decoder = new TextDecoder()
 async function transferFiles(from: string, to: JSZip) {
     try {
@@ -34,11 +37,15 @@ async function transferFiles(from: string, to: JSZip) {
         for await (const entry of files) {
             if (entry.isFile) {
                 const content = await Deno.readFile(entry.path)
-                if (entry.path.toLowerCase().endsWith(".mcmeta.fennec")) {
+                if (entry.path.match(MCMETA_FILE)) {
                     const path = entry.path.replace(FENNEC_FILE, "")
                     console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Compiling "+common.ColorCodes.RESET+common.ColorCodes.BLUE+entry.path+common.ColorCodes.GREEN+" -> "+common.ColorCodes.BLUE+path)
                     to.addFile(path, JSON.stringify(common.fennec.parse(decoder.decode(content))))
-                } else if (entry.path.toLowerCase().endsWith(".fennec")) {
+                } else if (entry.path.match(BLOCKSTATE_FILE)) {
+                    const path = entry.path.replace(BLOCKSTATE_FILE, ".json")
+                    console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Compiling "+common.ColorCodes.RESET+common.ColorCodes.BLUE+entry.path+common.ColorCodes.GREEN+" -> "+common.ColorCodes.BLUE+path)
+                    to.addFile(path, JSON.stringify(transformBlockState(common.fennec.parse(decoder.decode(content)))))
+                } else if (entry.path.match(FENNEC_FILE)) {
                     const path = entry.path.replace(FENNEC_FILE, ".json")
                     console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Compiling "+common.ColorCodes.RESET+common.ColorCodes.BLUE+entry.path+common.ColorCodes.GREEN+" -> "+common.ColorCodes.BLUE+path)
                     to.addFile(path, JSON.stringify(common.fennec.parse(decoder.decode(content))))
