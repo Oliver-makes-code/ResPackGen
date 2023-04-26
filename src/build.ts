@@ -48,5 +48,5 @@ async function transferFiles(from: string, to: JSZip) {
                 }
             }
         }
-    } catch {/*Ignored*/}
+    } catch (err) {console.log(err)}
 }

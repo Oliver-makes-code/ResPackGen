@@ -71,7 +71,7 @@ export const IDENTIFIER = /^([a-z0-9_\-\.]+):([a-z0-9_\-\.\/]+)$/
 export const LEGAL_NAMESPACE = /^[a-z0-9_\-\.]+$/
 export const LEGAL_PATH = /^[a-z0-9_\-\.\/]+$/
 
-export const PACK_FORMAT = 10
+export const PACK_FORMAT = 14
 
 export type Err<E> = {type:"ERR", value: E}
 export function Err<E>(value: E): Err<E> {
