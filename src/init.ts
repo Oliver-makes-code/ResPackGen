@@ -26,8 +26,8 @@ export default async function init(name?: string, description?: string) {
     }
     if (meta.type == common.PackType.resource || meta.type == common.PackType.both) {
         try {
-            await Deno.mkdir("resources")
-            console.log(ColorCodes.BOLD+ColorCodes.GREEN+"Created"+ColorCodes.RESET+ColorCodes.BLUE+" resources directory")
+            await Deno.mkdir("assets")
+            console.log(ColorCodes.BOLD+ColorCodes.GREEN+"Created"+ColorCodes.RESET+ColorCodes.BLUE+" assets directory")
         } catch {/*Ignored, dir already exists*/}
     }
 }

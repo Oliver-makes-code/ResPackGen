@@ -67,6 +67,54 @@ export async function getMeta(): Promise<void|PackGenMeta> {
     } catch {/*Ignored*/}
 }
 
+export const IDENTIFIER = /^([a-z0-9_\-\.]+):([a-z0-9_\-\.\/]+)$/
 export const LEGAL_NAMESPACE = /^[a-z0-9_\-\.]+$/
+export const LEGAL_PATH = /^[a-z0-9_\-\.\/]+$/
 
 export const PACK_FORMAT = 10
+
+export type Err<E> = {type:"ERR", value: E}
+export function Err<E>(value: E): Err<E> {
+    return {
+        type: "ERR",
+        value
+    }
+}
+export type Ok<T> = {type: "OK", value: T}
+export function Ok<T>(value: T): Ok<T> {
+    return {
+        type: "OK",
+        value
+    }
+}
+export type Result<T, E> = Ok<T>|Err<E>
+
+export interface Identifier {
+    namesapce: string,
+    path: string
+}
+
+export const FailReason = {
+    NO_META: "NO_META",
+    INVALID_NAMESPACE: "INVALID_NAMESPACE",
+    INVALID_PATH: "INVALID_PATH"
+} as const
+
+export type FailReason = typeof FailReason[keyof typeof FailReason]
+
+export async function identifier(namesapce: string, path?: string): Promise<Result<Identifier, FailReason>> {
+    if (!path) {
+        const match = namesapce.match(IDENTIFIER)
+        if (match)
+            return await identifier(match[1], match[2])
+        const meta = await getMeta()
+        if (!meta) return Err(FailReason.NO_META)
+        return await identifier(meta.namespace, namesapce)
+    }
+    if (!namesapce.match(LEGAL_NAMESPACE)) return Err(FailReason.INVALID_NAMESPACE)
+    if (!path.match(LEGAL_PATH)) return Err(FailReason.INVALID_PATH)
+    return Ok({
+        namesapce: namesapce,
+        path: path
+    })
+}

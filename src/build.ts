@@ -12,11 +12,11 @@ export default async function build() {
         return
     }
 
-    const zipname = meta.name.replaceAll(" ","-").replaceAll("/","-")+"-"+meta.version+".zip"
+    const zipname = meta.name.replaceAll(" ","-").replaceAll("/","-").replaceAll("\\","-").replaceAll(":","-")+"-"+meta.version+".zip"
 
     const zip = new JSZip()
 
-    if (meta.type == common.PackType.resource || meta.type == common.PackType.both) await transferFiles("./resources", zip)
+    if (meta.type == common.PackType.resource || meta.type == common.PackType.both) await transferFiles("./assets", zip)
     if (meta.type == common.PackType.data || meta.type == common.PackType.both) await transferFiles("./data", zip)
 
     console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Creating "+common.ColorCodes.RESET+common.ColorCodes.BLUE+"pack.mcmeta")

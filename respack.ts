@@ -1,7 +1,7 @@
 // deno-lint-ignore-file require-await
 import init from "./src/init.ts"
 import build from "./src/build.ts"
-import { ColorCodes } from "./src/common.ts"
+import { ColorCodes, identifier } from "./src/common.ts"
 
 const commands = {
     help: {
