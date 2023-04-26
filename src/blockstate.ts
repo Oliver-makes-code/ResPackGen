@@ -55,11 +55,14 @@ function transformVariants(state: OrArray<StateDef>): Record<string, any> {
 
     iterate(state, state => {
         if (typeof state == "string") {
-            add("", {
-                model: state
-            })
+            if (common.validateIdentifier(state))
+                add("", {
+                    model: state
+                })
         } else if (state.hasOwnProperty("model")) {
-            add("", state)
+            //@ts-ignore
+            if (common.validateIdentifier(state.model))
+                add("", state)
         } else {
             let cond = state as ConditionalModel
             let str = ""
@@ -72,11 +75,14 @@ function transformVariants(state: OrArray<StateDef>): Record<string, any> {
             
             iterate(cond.apply, model => {
                 if (typeof model == "string") {
-                    add(str, {
-                        model
-                    })
+                    if (common.validateIdentifier(model))
+                        add("", {
+                            model: model
+                        })
                 } else {
-                    add(str, model)
+                    //@ts-ignore
+                    if (common.validateIdentifier(model.model))
+                        add("", model)
                 }
             })
         }
@@ -98,15 +104,18 @@ function transformMultipart(state: OrArray<StateDef>): Record<string, any> {
 
     iterate(state, state => {
         if (typeof state == "string") {
-            out.push({
-                "apply": {
-                    "model": state
-                }
-            })
+            if (common.validateIdentifier(state))
+                out.push({
+                    apply: {
+                        model: state
+                    }
+                })
         } else if (state.hasOwnProperty("model")) {
-            out.push({
-                "apply": state as ModelPointer
-            })
+            //@ts-ignore
+            if (common.validateIdentifier(state.model))
+                out.push({
+                    apply: state
+                })
         } else {
             let cond = state as ConditionalModel
             let when: {[k:string]: any} = {}
@@ -123,17 +132,19 @@ function transformMultipart(state: OrArray<StateDef>): Record<string, any> {
             
             iterate(cond.apply, model => {
                 if (typeof model == "string") {
-                    apply.push({
-                        "model": model
-                    })
+                    if (common.validateIdentifier(model))
+                        apply.push({
+                            model: model
+                        })
                 } else {
-                    apply.push(model)
+                    if (common.validateIdentifier(model.model))
+                        apply.push(model)
                 }
             })
 
             if (apply.length == 1) {
                 out.push({when, apply: apply[0]})
-            } else {
+            } else if (apply.length != 0) {
                 out.push({when, apply})
             }
         }
