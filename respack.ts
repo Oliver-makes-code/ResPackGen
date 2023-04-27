@@ -47,7 +47,7 @@ const commands = {
         name: string,
         optional: boolean
     }[]
-    call: (...args: string[]) => Promise<void>
+    call(...args: string[]): Promise<void>
 }}
 
 if (import.meta.main) {
