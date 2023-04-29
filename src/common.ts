@@ -1,6 +1,62 @@
 export * as gitignore from "https://esm.sh/gitignore-parser@0.0.2"
 export * as fennec from "https://oliver-makes-code.github.io/FennecConfig/impl/typescript/mod.ts"
 import fennec from "https://oliver-makes-code.github.io/FennecConfig/impl/typescript/mod.ts"
+import { BuiltinPlugin, Plugin, PluginType, TypedPlugin } from "./plugin.ts"
+import * as fs from "https://deno.land/std@0.167.0/fs/mod.ts";
+
+import BlockstatePlugin from "./plugins/blockstate.ts"
+import McMetaPlugin from "./plugins/mcmeta.ts"
+
+const builtinPlugins: (Plugin & BuiltinPlugin)[] = [
+    BlockstatePlugin, McMetaPlugin
+]
+
+const NOT_RELATIVE = /^([A-Z]+:)?[\/\\]/i
+
+export const LOADED_PLUGINS = await loadPlugins()
+
+interface Array<T> {
+    contains(obj: any): boolean;
+}
+
+function isUrl(path: string): boolean {
+    try {
+        let url = new URL(path)
+
+        return ["http", "https"].indexOf(url.protocol) != -1
+    } catch {
+        return false
+    }
+}
+
+async function loadPlugins(): Promise<Plugin[]> {
+    const meta = await getMeta()
+    if (!meta) return builtinPlugins
+    if (!meta.plugins) return builtinPlugins
+    let out = [...builtinPlugins]
+
+    for (let plugin of meta.plugins) {
+        if (isUrl(plugin)) {
+            out.push((await import(plugin)).default)
+        } else if (plugin.match(NOT_RELATIVE)) {
+            out.push((await import(plugin)).default)
+        } else {
+            out.push((await import(Deno.cwd()+"/"+plugin)).default)
+        }
+    }
+
+    return out
+}
+
+export function getPlugins<T1 extends TypedPlugin<T2>, T2 extends PluginType>(type: T2): T1[] {
+    let plugins: T1[] = []
+    for (let plugin of LOADED_PLUGINS)
+        if (plugin.type == type)
+            plugins.push(plugin as T1)
+        else if (plugin.type == PluginType.BUILTIN && plugin.plugin.type == type)
+            plugins.push(plugin.plugin as T1)
+    return plugins
+}
 
 export const PackType = {
     data: "data",
@@ -9,15 +65,18 @@ export const PackType = {
 } as const
 export type PackType = typeof PackType[keyof typeof PackType]
 
+export const SCHEMA_VERSION = "1.1.0"
+
 export interface PackGenMeta {
-    schema: "1.0.0"
+    schema: `${number}.${number}.${number}`
     name: string
     description: string
     namespace: string
     version: string
     license: string
     type: PackType
-    repo?: string
+    repo?: string,
+    plugins?: string[]
 }
 
 export type OrArray<T> = T | T[]
@@ -30,7 +89,7 @@ export function getLicense(): string {
 const SSH_REPO_REGEX = /^.*@([^:]+):(.+?)(\.git)?$/
 const HTTP_REPO_REGEX = /^(https?:\/\/[^\/]+\/(.+?))(\.git)?$/
 
-export async function getRepo(): Promise<string|undefined> {
+export async function getRepo(): Promise<void|string> {
     const run = Deno.run({ cmd: [ "git", "config", "--get", "remote.origin.url" ], stdout: "piped" })
     const repo =  new TextDecoder().decode(await run.output()).trim()
     const ssh = repo.match(SSH_REPO_REGEX)
@@ -45,24 +104,6 @@ export async function getRepo(): Promise<string|undefined> {
     return
 }
 
-function color(code: string|number) {
-    return "\u001b["+code+"m"
-}
-
-export const ColorCodes = {
-    BOLD: color(1),
-    RESET: color(0),
-    BLACK: color(30),
-    RED: color(31),
-    GREEN: color(32),
-    YELLOW: color(33),
-    BLUE: color(34),
-    MAGENTA: color(35),
-    CYAN: color(36),
-    WHITE: color(37),
-    DEFAULT: color(39)
-}
-
 export async function getMeta(): Promise<void|PackGenMeta> {
     try {
         return fennec.parse(await Deno.readTextFile("pack.fennec")) as PackGenMeta
@@ -74,29 +115,6 @@ export const LEGAL_NAMESPACE = /^[a-z0-9_\-\.]+$/
 export const LEGAL_PATH = /^[a-z0-9_\-\.\/]+$/
 
 export const PACK_FORMAT = 14
-
-export type Err<E> = {type:"ERR", value: E}
-export function Err<E>(value: E): Err<E> {
-    return {
-        type: "ERR",
-        value
-    }
-}
-export type Ok<T> = {type: "OK", value: T}
-export function Ok<T>(value: T): Ok<T> {
-    return {
-        type: "OK",
-        value
-    }
-}
-export type Result<T, E> = Ok<T>|Err<E>
-
-export const FailReason = {
-    NO_META: "NO_META",
-    INVALID_PATH: "INVALID_PATH"
-} as const
-
-export type FailReason = typeof FailReason[keyof typeof FailReason]
 
 type Identifier = string
 

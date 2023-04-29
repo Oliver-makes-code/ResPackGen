@@ -1,5 +1,25 @@
-import { OrArray } from "./common.ts"
-import * as common from "./common.ts"
+import { OrArray } from "../common.ts"
+import * as common from "../common.ts"
+import { BuiltinPlugin, Plugin } from "../plugin.ts"
+
+const REGEX = /\.blockstate\.fennec$/i;
+
+export default {
+    name: "blockstate",
+    type: "BUILTIN",
+    plugin: {
+        type: "BUILD_FILE",
+        match_filename(filename: string): boolean {
+            return !!filename.match(REGEX)
+        },
+        patch_filename(filename: string): string {
+            return filename.replace(REGEX, ".json")
+        },
+        transform_file(file: string): string {
+            return JSON.stringify(transformBlockState(common.fennec.parse(file)))
+        }
+    }
+} as Plugin & BuiltinPlugin
 
 type X = {x?: number}
 type Y = {y?: number}
@@ -20,12 +40,12 @@ type ConditionalModel = {
 
 type StateDef = ConditionalModel|ModelPointer
 
-export type BlockState = {
+type BlockState = {
     multipart?: boolean,
     state: OrArray<StateDef>
 }
 
-export function transformBlockState(blockstate: BlockState|OrArray<StateDef>): Record<string, any> {
+function transformBlockState(blockstate: BlockState|OrArray<StateDef>): Record<string, any> {
     if (blockstate.hasOwnProperty("state")) {
         blockstate = blockstate as BlockState
         if (blockstate.multipart)

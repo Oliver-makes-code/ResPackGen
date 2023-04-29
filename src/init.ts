@@ -1,5 +1,4 @@
 import * as common from "./common.ts"
-import { ColorCodes } from "./common.ts"
 import term from "./term.tsx"
 
 const GPL_REGEX = /^a?gpl$/i
@@ -60,9 +59,9 @@ async function getMeta(name?: string, description?: string, type?: string, licen
             if (res) break
             license = prompt(term.init.prompt.license, common.getLicense())!
         }
-        const repo = prompt(term.init.prompt.repo, await common.getRepo()) ?? undefined
+        const repo = prompt(term.init.prompt.repo, await common.getRepo() ?? undefined) ?? undefined
         const meta: common.PackGenMeta = {
-            schema: "1.0.0",
+            schema: common.SCHEMA_VERSION,
             name,
             description,
             namespace,
@@ -70,6 +69,7 @@ async function getMeta(name?: string, description?: string, type?: string, licen
             type: type.toLowerCase() as common.PackType,
             license,
             repo,
+            plugins: []
         }
         console.log(term.init.fennec(meta))
         res = prompt(term.init.prompt.continue)?.toLowerCase() == "y"

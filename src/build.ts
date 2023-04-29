@@ -1,7 +1,6 @@
 import * as common from "./common.ts"
 import * as fs from "https://deno.land/std@0.167.0/fs/mod.ts";
 import { JSZip } from "https://deno.land/x/jszip@0.11.0/mod.ts";
-import { transformBlockState } from "./blockstate.ts";
 import term from "./term.tsx"
 
 export default async function build() {
@@ -28,23 +27,29 @@ export default async function build() {
     console.log(term.build.exported(zipname))
 }
 const FENNEC_FILE = /\.fennec$/i
-const MCMETA_FILE = /\.mcmeta\.fennec$/i
-const BLOCKSTATE_FILE = /\.blockstate\.fennec$/i
 const decoder = new TextDecoder()
 async function transferFiles(from: string, to: JSZip) {
+    let plugins = common.getPlugins("BUILD_FILE")
     try {
         const files = fs.walk(from)
         for await (const entry of files) {
             if (entry.isFile) {
                 const content = await Deno.readFile(entry.path)
-                if (entry.path.match(MCMETA_FILE)) {
-                    const path = entry.path.replace(FENNEC_FILE, "")
-                    console.log(term.build.compiling(entry.path, path))
-                    to.addFile(path, JSON.stringify(common.fennec.parse(decoder.decode(content))))
-                } else if (entry.path.match(BLOCKSTATE_FILE)) {
-                    const path = entry.path.replace(BLOCKSTATE_FILE, ".json")
-                    console.log(term.build.compiling(entry.path, path))
-                    to.addFile(path, JSON.stringify(transformBlockState(common.fennec.parse(decoder.decode(content)))))
+                let hadPlugin = false
+                for (let plugin of plugins) {
+                    if (plugin.match_filename(entry.path)) {
+                        hadPlugin = true
+
+                        const path = plugin.patch_filename(entry.path)
+                        console.log(term.build.compiling(entry.path, path))
+                        to.addFile(path, plugin.transform_file(decoder.decode(content)))
+
+                        break
+                    }
+                }
+
+                if (hadPlugin) {
+                    continue
                 } else if (entry.path.match(FENNEC_FILE)) {
                     const path = entry.path.replace(FENNEC_FILE, ".json")
                     console.log(term.build.compiling(entry.path, path))
