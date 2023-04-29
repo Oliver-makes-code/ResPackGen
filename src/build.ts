@@ -2,14 +2,14 @@ import * as common from "./common.ts"
 import * as fs from "https://deno.land/std@0.167.0/fs/mod.ts";
 import { JSZip } from "https://deno.land/x/jszip@0.11.0/mod.ts";
 import { transformBlockState } from "./blockstate.ts";
+import term from "./term.tsx"
 
 export default async function build() {
 
     const meta = await common.getMeta()
 
     if (!meta) {
-        console.log(common.ColorCodes.RED + "This directory doesn't contain a pack." + common.ColorCodes.RESET)
-        console.log(common.ColorCodes.RED + "Run the " + common.ColorCodes.BLUE + "init" + common.ColorCodes.RESET + common.ColorCodes.RED + " command to initialize a pack" + common.ColorCodes.RESET)
+        console.log(term.build.err.no_meta)
         return
     }
 
@@ -20,12 +20,12 @@ export default async function build() {
     if (meta.type == common.PackType.resource || meta.type == common.PackType.both) await transferFiles("./assets", zip)
     if (meta.type == common.PackType.data || meta.type == common.PackType.both) await transferFiles("./data", zip)
 
-    console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Creating "+common.ColorCodes.RESET+common.ColorCodes.BLUE+"pack.mcmeta")
+    console.log(term.build.creating("pack.mcmeta"))
     zip.addFile("pack.mcmeta", JSON.stringify({pack:{description:meta.description,pack_format:common.PACK_FORMAT}}))
 
     zip.writeZip("./"+zipname)
 
-    console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"\nExported "+common.ColorCodes.RESET+common.ColorCodes.BLUE+zipname)
+    console.log(term.build.exported(zipname))
 }
 const FENNEC_FILE = /\.fennec$/i
 const MCMETA_FILE = /\.mcmeta\.fennec$/i
@@ -39,21 +39,21 @@ async function transferFiles(from: string, to: JSZip) {
                 const content = await Deno.readFile(entry.path)
                 if (entry.path.match(MCMETA_FILE)) {
                     const path = entry.path.replace(FENNEC_FILE, "")
-                    console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Compiling "+common.ColorCodes.RESET+common.ColorCodes.BLUE+entry.path+common.ColorCodes.GREEN+" -> "+common.ColorCodes.BLUE+path)
+                    console.log(term.build.compiling(entry.path, path))
                     to.addFile(path, JSON.stringify(common.fennec.parse(decoder.decode(content))))
                 } else if (entry.path.match(BLOCKSTATE_FILE)) {
                     const path = entry.path.replace(BLOCKSTATE_FILE, ".json")
-                    console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Compiling "+common.ColorCodes.RESET+common.ColorCodes.BLUE+entry.path+common.ColorCodes.GREEN+" -> "+common.ColorCodes.BLUE+path)
+                    console.log(term.build.compiling(entry.path, path))
                     to.addFile(path, JSON.stringify(transformBlockState(common.fennec.parse(decoder.decode(content)))))
                 } else if (entry.path.match(FENNEC_FILE)) {
                     const path = entry.path.replace(FENNEC_FILE, ".json")
-                    console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Compiling "+common.ColorCodes.RESET+common.ColorCodes.BLUE+entry.path+common.ColorCodes.GREEN+" -> "+common.ColorCodes.BLUE+path)
+                    console.log(term.build.compiling(entry.path, path))
                     to.addFile(path, JSON.stringify(common.fennec.parse(decoder.decode(content))))
                 } else {
-                    console.log(common.ColorCodes.GREEN+common.ColorCodes.BOLD+"Adding "+common.ColorCodes.RESET+common.ColorCodes.BLUE+entry.path)
+                    console.log(term.build.adding(entry.path))
                     to.addFile(entry.path, content)
                 }
             }
         }
-    } catch (err) {console.log(err)}
+    } catch (err) {console.error(err)}
 }
